@@ -65,8 +65,8 @@ print('Number of samples: {}'.format(dataset.N))
 # # Define parameters for the WGAN
 
 time_str = 'extend_piano'
-#global_path = '../saved_results'
-global_path = '/scratch/snx3000/aeltelt/saved_results'
+global_path = '../saved_results'
+#global_path = '/scratch/snx3000/aeltelt/saved_results'
 
 name = 'WGAN' + '_' + time_str
 

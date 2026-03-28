@@ -108,13 +108,13 @@ class WGAN(BaseGAN):
 
     def __init__(self, params, name='wgan'):
         super().__init__(params=params, name=name)
-        self._summary = tf.summary.merge(tf.get_collection("model"))
+        self._summary = tf.compat.v1.summary.merge(tf.compat.v1.get_collection("model"))
 
 
     def _build_generator(self):
         shape = self._params['shape']
-        self.X_real = tf.placeholder(tf.float32, shape=[None, *shape], name='Xreal')
-        self.z = tf.placeholder(
+        self.X_real = tf.compat.v1.placeholder(tf.float32, shape=[None, *shape], name='Xreal')
+        self.z = tf.compat.v1.placeholder(
             tf.float32,
             shape=[None, self.params['generator']['latent_dim']],
             name='z')
@@ -154,7 +154,7 @@ class WGAN(BaseGAN):
             reg = tf.nn.relu(self._D_loss_r*self._D_loss_f)
             self._D_loss = -(self._D_loss_r - self._D_loss_f) + self._D_gp + reg
             self._G_loss = -self._D_loss_f
-            tf.summary.scalar("Disc/reg", reg, collections=["train"])
+            tf.compat.v1.summary.scalar("Disc/reg", reg, collections=["train"])
 
         else:
             raise ValueError('Unknown loss type!')    
@@ -163,7 +163,7 @@ class WGAN(BaseGAN):
 
 
     def _add_summary(self):
-        tf.summary.histogram('Prior/z', self.z, collections=['model'])
+        tf.compat.v1.summary.histogram('Prior/z', self.z, collections=['model'])
         self._build_image_summary()
         self._build_stat_summary()
         self._wgan_summaries()
@@ -181,7 +181,7 @@ class WGAN(BaseGAN):
     def wgan_regularization(self, gamma, list_fake, list_real):
         if not gamma:
             # I am not sure this part or the code is still useful
-            t_vars = tf.trainable_variables()
+            t_vars = tf.compat.v1.trainable_variables()
             d_vars = [var for var in t_vars if 'discriminator' in var.name]
             D_clip = [p.assign(tf.clip_by_value(p, -0.01, 0.01)) for p in d_vars]
             self._constraints.append(D_clip)
@@ -191,7 +191,7 @@ class WGAN(BaseGAN):
             # calculate `x_hat`
             assert(len(list_fake) == len(list_real))
             bs = tf.shape(list_fake[0])[0]
-            eps = tf.random_uniform(shape=[bs], minval=0, maxval=1)
+            eps = tf.random.uniform(shape=[bs], minval=0, maxval=1)
 
             x_hat = []
             for fake, real in zip(list_fake, list_real):
@@ -205,18 +205,18 @@ class WGAN(BaseGAN):
             gradients = tf.gradients(D_x_hat, x_hat)
             norm_gradient_pen = tf.norm(gradients[0], ord=2)
             D_gp = gamma * tf.square(norm_gradient_pen - 1.0)
-            tf.summary.scalar("Disc/GradPen", D_gp, collections=["train"])
-            tf.summary.scalar("Disc/NormGradientPen", norm_gradient_pen, collections=["train"])
+            tf.compat.v1.summary.scalar("Disc/GradPen", D_gp, collections=["train"])
+            tf.compat.v1.summary.scalar("Disc/NormGradientPen", norm_gradient_pen, collections=["train"])
             print(" Using gradients penalty")
 
         return D_gp
 
     def _wgan_summaries(self):
-        tf.summary.scalar("Disc/Neg_Loss", -self._D_loss, collections=["train"])
-        tf.summary.scalar("Disc/Neg_Critic", self._D_loss_f - self._D_loss_r, collections=["train"])
-        tf.summary.scalar("Disc/Loss_f", self._D_loss_f, collections=["train"])
-        tf.summary.scalar("Disc/Loss_r", self._D_loss_r, collections=["train"])
-        tf.summary.scalar("Gen/Loss", self._G_loss, collections=["train"])
+        tf.compat.v1.summary.scalar("Disc/Neg_Loss", -self._D_loss, collections=["train"])
+        tf.compat.v1.summary.scalar("Disc/Neg_Critic", self._D_loss_f - self._D_loss_r, collections=["train"])
+        tf.compat.v1.summary.scalar("Disc/Loss_f", self._D_loss_f, collections=["train"])
+        tf.compat.v1.summary.scalar("Disc/Loss_r", self._D_loss_r, collections=["train"])
+        tf.compat.v1.summary.scalar("Gen/Loss", self._G_loss, collections=["train"])
    
     def _build_stat_summary(self):
         self._stat_list_real = ganlist.gan_stat_list('real')
@@ -256,34 +256,34 @@ class WGAN(BaseGAN):
             X_fake = utils.tf_cube_slices(self.X_fake)
             # Plot some slices
             sl = self.X_real.shape[3]//2
-            tf.summary.image(
+            tf.compat.v1.summary.image(
                 "images/Real_Image_slice_middle",
                 colorize(self.X_real[:,:,:,sl,:], vmin, vmax),
                 max_outputs=4,
                 collections=['model'])
-            tf.summary.image(
+            tf.compat.v1.summary.image(
                 "images/Fake_Image_slice_middle",
                 colorize(self.X_fake[:,:,:,sl,:], vmin, vmax),
                 max_outputs=4,
                 collections=['model'])
             sl = self.X_real.shape[3]-1
-            tf.summary.image(
+            tf.compat.v1.summary.image(
                 "images/Real_Image_slice_end",
                 colorize(self.X_real[:,:,:,sl,:], vmin, vmax),
                 max_outputs=4,
                 collections=['model'])
-            tf.summary.image(
+            tf.compat.v1.summary.image(
                 "images/Fake_Image_slice_end",
                 colorize(self.X_fake[:,:,:,sl,:], vmin, vmax),
                 max_outputs=4,
                 collections=['model'])
             sl = (self.X_real.shape[3]*3)//4
-            tf.summary.image(
+            tf.compat.v1.summary.image(
                 "images/Real_Image_slice_3/4",
                 colorize(self.X_real[:,:,:,sl,:], vmin, vmax),
                 max_outputs=4,
                 collections=['model'])
-            tf.summary.image(
+            tf.compat.v1.summary.image(
                 "images/Fake_Image_slice_3/4",
                 colorize(self.X_fake[:,:,:,sl,:], vmin, vmax),
                 max_outputs=4,
@@ -292,20 +292,20 @@ class WGAN(BaseGAN):
             X_real = self.X_real
             X_fake = self.X_fake
         elif self.data_size==1:
-            self._plot_real = PlotSummaryPlot(4, 4, "real", "signals", collections=['model'])
-            self._plot_fake = PlotSummaryPlot(4, 4, "fake", "signals", collections=['model'])
+            self._plot_real = PlotSummaryPlot(4, 4, "real", "signals")
+            self._plot_fake = PlotSummaryPlot(4, 4, "fake", "signals")
             fs = self.params.get('fs', 16000)
-            tf.summary.audio(
+            tf.compat.v1.summary.audio(
                 'audio/Real', self.X_real, fs, max_outputs=4, collections=['model'])
-            tf.summary.audio(
+            tf.compat.v1.summary.audio(
                 'audio/Fake', self.X_fake, fs, max_outputs=4, collections=['model'])
             return None
-        tf.summary.image(
+        tf.compat.v1.summary.image(
             "images/Real_Image",
             colorize(X_real, vmin, vmax),
             max_outputs=4,
             collections=['model'])
-        tf.summary.image(
+        tf.compat.v1.summary.image(
             "images/Fake_Image",
             colorize(X_fake, vmin, vmax),
             max_outputs=4,
@@ -383,8 +383,8 @@ class InpaintingGAN(WGAN):
 	
     def _build_generator(self):
         shape = self._params['shape']
-        self.X_real = tf.placeholder(tf.float32, shape=[None, *shape], name='Xreal')
-        self.z = tf.placeholder(
+        self.X_real = tf.compat.v1.placeholder(tf.float32, shape=[None, *shape], name='Xreal')
+        self.z = tf.compat.v1.placeholder(
             tf.float32,
             shape=[None, self.params['generator']['latent_dim']],
             name='z')
@@ -393,7 +393,7 @@ class InpaintingGAN(WGAN):
         borders = tf.concat([borderleft,borderright], axis=self.data_size+1)
         inshape = borders.shape.as_list()[1:]
 
-        self.borders = tf.placeholder_with_default(borders, shape=[None, *inshape], name='borders')
+        self.borders = tf.compat.v1.placeholder_with_default(borders, shape=[None, *inshape], name='borders')
 
         self.X_fake_center = self.generator(self.z,  y=self.borders, reuse=False)
         # Those line should be done in a better way
@@ -431,9 +431,9 @@ class ConditionalParamWGAN(WGAN):
 
     def _build_generator(self):
         shape = self._params['shape']
-        self.X_real = tf.placeholder(tf.float32, shape=[None, *shape], name='Xreal')
-        self.z = tf.placeholder(tf.float32, shape=[None, self.params['generator']['latent_dim'] * self.params['cond_params']], name='z')
-        self.X_param = tf.placeholder(tf.float32, shape=[None, self._params['cond_params']], name='Xparam')
+        self.X_real = tf.compat.v1.placeholder(tf.float32, shape=[None, *shape], name='Xreal')
+        self.z = tf.compat.v1.placeholder(tf.float32, shape=[None, self.params['generator']['latent_dim'] * self.params['cond_params']], name='z')
+        self.X_param = tf.compat.v1.placeholder(tf.float32, shape=[None, self._params['cond_params']], name='Xparam')
         self.X_fake = self.generator(self.z, reuse=False, model=self)
 #         self.switch = tf.placeholder(tf.float32, shape=[None, 1], name='switch')s
 
@@ -506,13 +506,13 @@ class LapWGAN(WGAN):
 
     def _build_generator(self):
         shape = self._params['shape']
-        self.X_real = tf.placeholder(tf.float32, shape=[None, *shape], name='Xreal')
+        self.X_real = tf.compat.v1.placeholder(tf.float32, shape=[None, *shape], name='Xreal')
         self.upscaling = self.params['upscaling']
         X_down = down_sampler(self.X_real, s=self.upscaling)
         inshape = X_down.shape.as_list()[1:]
-        self.X_down = tf.placeholder_with_default(X_down, shape=[None, *inshape], name='y')
+        self.X_down = tf.compat.v1.placeholder_with_default(X_down, shape=[None, *inshape], name='y')
         self.X_smooth = up_sampler(self.X_down, s=self.upscaling, smoothout=True)
-        self.z = tf.placeholder(
+        self.z = tf.compat.v1.placeholder(
             tf.float32,
             shape=[None, self.params['generator']['latent_dim']],
             name='z')
@@ -533,12 +533,12 @@ class LapWGAN(WGAN):
             X_smooth = self.X_smooth
 
         elif self.data_size==1:
-            self._plot_down = PlotSummaryPlot(4, 4, "down", "signals", collections=['model'])
+            self._plot_down = PlotSummaryPlot(4, 4, "down", "signals")
             fs = self.params.get('fs', 16000)
-            tf.summary.audio(
+            tf.compat.v1.summary.audio(
                 'audio/down', self.X_smooth, fs, max_outputs=4, collections=['model'])
             return None
-        tf.summary.image(
+        tf.compat.v1.summary.image(
             "images/Down_sampled_image",
             colorize(X_smooth, vmin, vmax),
             max_outputs=4,
@@ -585,8 +585,8 @@ class UpscalePatchWGAN(WGAN):
 
     def _build_generator(self):
         shape = self.params['shape']
-        self.X_data = tf.placeholder(tf.float32, shape=[None, *shape], name='X_data')
-        self.z = tf.placeholder(
+        self.X_data = tf.compat.v1.placeholder(tf.float32, shape=[None, *shape], name='X_data')
+        self.z = tf.compat.v1.placeholder(
             tf.float32,
             shape=[None, self.params['generator']['latent_dim']],
             name='z')
@@ -604,7 +604,7 @@ class UpscalePatchWGAN(WGAN):
         mult = la//(1+o)
         self.X_real_corner, borders = tf.split(self.X_data, [mult,o*mult], axis=axis)
         inshape = borders.shape.as_list()[1:]
-        self.borders = tf.placeholder_with_default(borders, shape=[None, *inshape], name='borders')
+        self.borders = tf.compat.v1.placeholder_with_default(borders, shape=[None, *inshape], name='borders')
         
         # B) Split the borders
         border_list = tf.split(self.borders, o, axis=axis)
@@ -626,7 +626,7 @@ class UpscalePatchWGAN(WGAN):
             self.upscaling = self.params['upscaling']
             X_down = down_sampler(self.X_real_corner, s=self.upscaling)
             inshape = X_down.shape.as_list()[1:]
-            self.X_down = tf.placeholder_with_default(X_down, shape=[None, *inshape], name='y')
+            self.X_down = tf.compat.v1.placeholder_with_default(X_down, shape=[None, *inshape], name='y')
             self.X_smooth = up_sampler(self.X_down, s=self.upscaling)
         else:
             self.X_smooth = None
@@ -716,12 +716,12 @@ class UpscalePatchWGAN(WGAN):
             elif self.data_size==2:
                 X_smooth = self.X_smooth
             elif self.data_size==1:
-                self._plot_down = PlotSummaryPlot(4, 4, "down", "signals", collections=['model'])
+                self._plot_down = PlotSummaryPlot(4, 4, "down", "signals")
                 fs = self.params.get('fs', 16000)
-                tf.summary.audio(
+                tf.compat.v1.summary.audio(
                     'audio/down', self.X_smooth, fs, max_outputs=4, collections=['model'])
                 return None
-            tf.summary.image(
+            tf.compat.v1.summary.image(
                 "images/Down_sampled_image",
                 colorize(X_smooth, vmin, vmax),
                 max_outputs=4,
@@ -762,22 +762,22 @@ class UpscalePatchWGAN(WGAN):
 
 
 def js_gan_summaries(D_out_f, D_out_r):
-    tf.summary.scalar("Disc/Out_f", tf.reduce_mean(D_out_f), collections=["Training"])
-    tf.summary.scalar("Disc/Out_r", tf.reduce_mean(D_out_r), collections=["Training"])
-    tf.summary.scalar("Disc/Out_f-r", tf.reduce_mean(D_out_f - D_out_r), collections=["Training"])
+    tf.compat.v1.summary.scalar("Disc/Out_f", tf.reduce_mean(D_out_f), collections=["Training"])
+    tf.compat.v1.summary.scalar("Disc/Out_r", tf.reduce_mean(D_out_r), collections=["Training"])
+    tf.compat.v1.summary.scalar("Disc/Out_f-r", tf.reduce_mean(D_out_f - D_out_r), collections=["Training"])
 
 def wgan_summaries(D_loss, G_loss, D_loss_f, D_loss_r):
-    tf.summary.scalar("Disc/Neg_Loss", -D_loss, collections=["Training"])
-    tf.summary.scalar("Disc/Neg_Critic", D_loss_f - D_loss_r, collections=["Training"])
-    tf.summary.scalar("Disc/Loss_f", D_loss_f, collections=["Training"])
-    tf.summary.scalar("Disc/Loss_r", D_loss_r, collections=["Training"])
-    tf.summary.scalar("Gen/Loss", G_loss, collections=["Training"])
+    tf.compat.v1.summary.scalar("Disc/Neg_Loss", -D_loss, collections=["Training"])
+    tf.compat.v1.summary.scalar("Disc/Neg_Critic", D_loss_f - D_loss_r, collections=["Training"])
+    tf.compat.v1.summary.scalar("Disc/Loss_f", D_loss_f, collections=["Training"])
+    tf.compat.v1.summary.scalar("Disc/Loss_r", D_loss_r, collections=["Training"])
+    tf.compat.v1.summary.scalar("Gen/Loss", G_loss, collections=["Training"])
 
 
 def fisher_gan_regularization(D_real, D_fake, rho=1):
-    with tf.variable_scope("discriminator", reuse=False):
-        phi = tf.get_variable('lambda', shape=[],
-            initializer=tf.initializers.constant(value=1.0, dtype=tf.float32))
+    with tf.compat.v1.variable_scope("discriminator", reuse=False):
+        phi = tf.compat.v1.get_variable('lambda', shape=[],
+            initializer=tf.compat.v1.initializers.constant(value=1.0, dtype=tf.float32))
         D_real2 = tf.reduce_mean(tf.square(D_real))
         D_fake2 = tf.reduce_mean(tf.square(D_fake))
         constraint = 1.0 - 0.5 * (D_real2 + D_fake2)
@@ -788,15 +788,15 @@ def fisher_gan_regularization(D_real, D_fake, rho=1):
         print(D_real2.shape)        
         print(constraint.shape)
         print(reg_term.shape)
-    tf.summary.scalar("Disc/constraint", reg_term, collections=["Training"])
-    tf.summary.scalar("Disc/reg_term", reg_term, collections=["Training"])
+    tf.compat.v1.summary.scalar("Disc/constraint", reg_term, collections=["Training"])
+    tf.compat.v1.summary.scalar("Disc/reg_term", reg_term, collections=["Training"])
     return reg_term
 
 
 def wgan_regularization(gamma, discriminator, list_fake, list_real):
     if not gamma:
         # I am not sure this part or the code is still useful
-        t_vars = tf.trainable_variables()
+        t_vars = tf.compat.v1.trainable_variables()
         d_vars = [var for var in t_vars if 'discriminator' in var.name]
         D_clip = [p.assign(tf.clip_by_value(p, -0.01, 0.01)) for p in d_vars]
         D_gp = tf.constant(0, dtype=tf.float32)
@@ -806,7 +806,7 @@ def wgan_regularization(gamma, discriminator, list_fake, list_real):
         # calculate `x_hat`
         assert(len(list_fake) == len(list_real))
         bs = tf.shape(list_fake[0])[0]
-        eps = tf.random_uniform(shape=[bs], minval=0, maxval=1)
+        eps = tf.random.uniform(shape=[bs], minval=0, maxval=1)
 
         x_hat = []
         for fake, real in zip(list_fake, list_real):
@@ -820,8 +820,8 @@ def wgan_regularization(gamma, discriminator, list_fake, list_real):
         gradients = tf.gradients(D_x_hat, x_hat)
         norm_gradient_pen = tf.norm(gradients[0], ord=2)
         D_gp = gamma * tf.square(norm_gradient_pen - 1.0)
-        tf.summary.scalar("Disc/GradPen", D_gp, collections=["Training"])
-        tf.summary.scalar("Disc/NormGradientPen", norm_gradient_pen, collections=["Training"])
+        tf.compat.v1.summary.scalar("Disc/GradPen", D_gp, collections=["Training"])
+        tf.compat.v1.summary.scalar("Disc/NormGradientPen", norm_gradient_pen, collections=["Training"])
     return D_gp
 
 
@@ -834,8 +834,8 @@ def js_regularization(D1_logits, D1_arg, D2_logits, D2_arg, batch_size):
     grad_D1_logits = tf.gradients(D1_logits, D1_arg)[0]
     #print(grad_D1_logits.shape)
     grad_D2_logits = tf.gradients(D2_logits, D2_arg)[0]
-    grad_D1_logits_norm = tf.norm(tf.reshape(grad_D1_logits, [bs,-1]), axis=1, keep_dims=True)
-    grad_D2_logits_norm = tf.norm(tf.reshape(grad_D2_logits, [bs,-1]), axis=1, keep_dims=True)
+    grad_D1_logits_norm = tf.norm(tf.reshape(grad_D1_logits, [bs,-1]), axis=1, keepdims=True)
+    grad_D2_logits_norm = tf.norm(tf.reshape(grad_D2_logits, [bs,-1]), axis=1, keepdims=True)
 
     #set keep_dims=True/False such that grad_D_logits_norm.shape == D.shape
     print("Shapes: {}=?={} and {}=?={}".format(grad_D1_logits_norm.shape, D1.shape,
@@ -983,15 +983,15 @@ def discriminator(x, params, z=None, reuse=True, scope="discriminator", model=No
             params['stride'][it] = [st]*params['data_size']
 
 
-    with tf.variable_scope(scope, reuse=reuse):
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
         if params['fft_features'] or params['psd_features']:
             ns = x.shape.as_list()[1]
             if params['data_size']==2:
                 X = tf.cast(x[:,:,:,0], dtype=tf.complex64)
-                fftX = tf.abs(tf.fft2d(X))/tf.constant(ns, dtype=tf.float32)
+                fftX = tf.abs(tf.signal.fft2d(X))/tf.constant(ns, dtype=tf.float32)
             elif params['data_size']==3:
                 X = tf.cast(x[:,:,:,:,0], dtype=tf.complex64)
-                fftX = tf.abs(tf.fft3d(X))/tf.constant(ns**(3/2), dtype=tf.float32)
+                fftX = tf.abs(tf.signal.fft3d(X))/tf.constant(ns**(3/2), dtype=tf.float32)
             else:
                 raise NotImplementedError()
             fftX = tf.expand_dims(fftX,axis=params['data_size']+1)
@@ -1009,7 +1009,7 @@ def discriminator(x, params, z=None, reuse=True, scope="discriminator", model=No
                 values=S.data,
                 dense_shape=S.shape)
             fftx = reshape2d(fftX)
-            psd_features = tf.transpose(tf.sparse_tensor_dense_matmul(tfS, fftx, adjoint_a=False, adjoint_b=True))
+            psd_features = tf.transpose(tf.sparse.sparse_dense_matmul(tfS, fftx, adjoint_a=False, adjoint_b=True))
         
         rprint('Discriminator \n'+''.join(['-']*50), reuse)
         rprint('     The input is of size {}'.format(x.shape), reuse)
@@ -1152,7 +1152,7 @@ def generator(x, params, X=None, y=None, reuse=True, scope="generator", model=No
             params['stride'][it] = [st]*params['data_size']
 
 
-    with tf.variable_scope(scope, reuse=reuse):
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
         rprint('Generator \n'+''.join(['-']*50), reuse)
         rprint('     The input is of size {}'.format(x.shape), reuse)
         if y is not None:
@@ -1213,7 +1213,7 @@ def generator(x, params, X=None, y=None, reuse=True, scope="generator", model=No
             #         sx = X.shape.as_list()[1]
             #     else:
             #         sx = np.int(np.round(np.prod(x.shape.as_list()[1:])))
-            c = np.int(np.round(np.prod(x.shape.as_list()[1:])))//sx
+            c = int(np.round(np.prod(x.shape.as_list()[1:])))//sx
             x = tf.reshape(x, [bs, sx, c], name='vec2img')
             rprint('     Reshape to {}'.format(x.shape), reuse)
 
@@ -1322,7 +1322,7 @@ def encoder(x, params, latent_dim, reuse=True, scope="encoder"):
     nconv = len(params['stride'])
     nfull = len(params['full'])
 
-    with tf.variable_scope(scope, reuse=reuse):
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
         rprint('Encoder \n'+''.join(['-']*50), reuse)
         rprint('     The input is of size {}'.format(x.shape), reuse)
         for i in range(nconv):
@@ -1405,7 +1405,7 @@ def generator_border(x, params, X=None, y=None, reuse=True, scope="generator"):
     assert(len(params_border['stride']) == len(params_border['nfilter'])
            == len(params_border['batch_norm']))
     nconv_border = len(params_border['stride'])
-    with tf.variable_scope(scope, reuse=reuse):
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
         rprint('Border block', reuse)
         rprint('\n'+(''.join(['-']*50)), reuse)
         rprint('     BORDER:  The input is of size {}'.format(y.shape), reuse)

@@ -29,6 +29,9 @@ Please keep this repository as clean as possible and do not commit data nor note
 
 
 ## Download and train 'PIANO' dataset
+
+### NOTE: this URL doesn't work anymore, not sure if there's a replacement
+
 1. Go to folder
 	```
 	cd code
@@ -59,16 +62,17 @@ Please keep this repository as clean as possible and do not commit data nor note
 	```
 	
 2. Download 'SOLO' dataset (<https://www.kaggle.com/zhousl16/solo-audio>)
-3. Make the 'SOLO' dataset
+3. Copy the data into `data`.
+4. Make the 'SOLO' dataset
 	```
 	python make_solo_dataset.py
 	```
-4. Go to folder
+5. Go to folder
    
    	```
 	cd code/experiments
 	```
-5. Training basic and extend WGAN model
+6. Training basic and extend WGAN model
    
    	```
 	python myexperiments-basic-solo.py

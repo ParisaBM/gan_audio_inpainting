@@ -1,8 +1,8 @@
-numpy==1.16
-tensorflow-gpu==1.13.2
+numpy==1.26
+tensorflow==2.19.1
 pillow
 h5py
-sklearn
+scikit-learn
 scikit-image
 pyyaml
 -e gantools
@@ -12,3 +12,4 @@ jupyterlab
 moviepy
 requests
 wavio
+tensorboard==2.20.0

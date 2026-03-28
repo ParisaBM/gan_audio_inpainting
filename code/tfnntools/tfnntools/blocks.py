@@ -18,7 +18,7 @@ def _tf_variable(name, shape, initializer):
     # Why do we need this 'True'?
     # When do we use _tf_variable?
     if True:  # with tf.device('/cpu:0'):
-        var = tf.get_variable(name, shape, initializer=initializer)
+        var = tf.compat.v1.get_variable(name, shape, initializer=initializer)
     return var
 
 
@@ -44,7 +44,7 @@ def lrelu(x, leak=0.2, name="lrelu"):
 
 
 def batch_norm(x, epsilon=1e-5, momentum=0.9, name="batch_norm", train=True):
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
         bn = tf.contrib.layers.batch_norm(
             x,
             decay=momentum,
@@ -63,9 +63,9 @@ def downsample(imgs, s, is_3d=False):
         # 1 extra dim for channels
         imgs = np.expand_dims(imgs, axis=4)
 
-        x = tf.placeholder(tf.float32, shape=imgs.shape, name='x')
+        x = tf.compat.v1.placeholder(tf.float32, shape=imgs.shape, name='x')
         xd = down_sampler(x, s=s, is_3d=True)
-        with tf.Session() as sess:
+        with tf.compat.v1.Session() as sess:
             img_d = sess.run(xd, feed_dict={x: imgs})
 
         return np.squeeze(img_d)
@@ -74,9 +74,9 @@ def downsample(imgs, s, is_3d=False):
         if len(imgs.shape) < 4:
             imgs = np.expand_dims(imgs, axis=3)
        
-        x = tf.placeholder(tf.float32, shape=[*imgs.shape[:3], 1], name='x')
+        x = tf.compat.v1.placeholder(tf.float32, shape=[*imgs.shape[:3], 1], name='x')
         xd = down_sampler(x, s=s, is_3d=False)
-        with tf.Session() as sess:
+        with tf.compat.v1.Session() as sess:
             img_d = []
             for i in range(imgs.shape[3]):
                 curr_img = np.expand_dims(imgs[:, :, :, i], axis=3)
@@ -91,7 +91,7 @@ def down_sampler(x, s=2, is_3d=False):
         return tf.nn.conv3d(x, filt, strides=[1, s, s, s, 1], padding='SAME')
     else:
         filt = tf.constant(1 / (s * s), dtype=tf.float32, shape=[s, s, 1, 1])
-        return tf.nn.conv2d(x, filt, strides=[1, s, s, 1], padding='SAME')
+        return tf.nn.conv2d(x, filters=filt, strides=[1, s, s, 1], padding='SAME')
 
 
 def up_sampler(x, s=2, is_3d=False):
@@ -158,47 +158,47 @@ def conv(x, *args, **kwargs):
 def conv1d(imgs, nf_out, shape=[5, 5], stride=2, name="conv1d", summary=True):
     '''Convolutional layer for square images'''
 
-    weights_initializer = tf.contrib.layers.xavier_initializer()
-    const = tf.constant_initializer(0.0)
+    weights_initializer = tf.compat.v1.keras.initializers.VarianceScaling(scale=1.0, mode="fan_avg", distribution="uniform")
+    const = tf.compat.v1.constant_initializer(0.0)
 
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
         w = _tf_variable(
             'w', [shape[0], imgs.get_shape()[-1], nf_out],
             initializer=weights_initializer)
         conv = tf.nn.conv1d(
-            imgs, w, stride, padding='SAME')
+            input=imgs, filters=w, stride=stride, padding='SAME')
 
         biases = _tf_variable('biases', [nf_out], initializer=const)
         conv = tf.nn.bias_add(conv, biases)
 
         if summary:
-            tf.summary.histogram("Bias_sum", biases, collections=["metrics"])
+            tf.compat.v1.summary.histogram("Bias_sum", biases, collections=["metrics"])
             # we put it in metrics so we don't store it too often
-            tf.summary.histogram("Weights_sum", w, collections=["metrics"])
+            tf.compat.v1.summary.histogram("Weights_sum", w, collections=["metrics"])
 
         return conv
 
 def conv2d(imgs, nf_out, shape=[5, 5], stride=2, name="conv2d", summary=True):
     '''Convolutional layer for square images'''
 
-    weights_initializer = tf.contrib.layers.xavier_initializer()
-    const = tf.constant_initializer(0.0)
+    weights_initializer = tf.compat.v1.keras.initializers.VarianceScaling(scale=1.0, mode="fan_avg", distribution="uniform")
+    const = tf.compat.v1.constant_initializer(0.0)
 
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
         w = _tf_variable(
             'w', [shape[0], shape[1],
                   imgs.get_shape()[-1], nf_out],
             initializer=weights_initializer)
         conv = tf.nn.conv2d(
-            imgs, w, strides=[1, stride, stride, 1], padding='SAME')
+            imgs, filters=w, strides=[1, stride, stride, 1], padding='SAME')
 
         biases = _tf_variable('biases', [nf_out], initializer=const)
         conv = tf.nn.bias_add(conv, biases)
 
         if summary:
-            tf.summary.histogram("Bias_sum", biases, collections=["metrics"])
+            tf.compat.v1.summary.histogram("Bias_sum", biases, collections=["metrics"])
             # we put it in metrics so we don't store it too often
-            tf.summary.histogram("Weights_sum", w, collections=["metrics"])
+            tf.compat.v1.summary.histogram("Weights_sum", w, collections=["metrics"])
 
         return conv
 
@@ -211,10 +211,10 @@ def conv3d(imgs,
            summary=True):
     '''Convolutional layer for square images'''
 
-    weights_initializer = tf.contrib.layers.xavier_initializer()
-    const = tf.constant_initializer(0.0)
+    weights_initializer = tf.compat.v1.keras.initializers.VarianceScaling(scale=1.0, mode="fan_avg", distribution="uniform")
+    const = tf.compat.v1.constant_initializer(0.0)
 
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
         w = _tf_variable(
             'w', [shape[0], shape[1], shape[2],
                   imgs.get_shape()[-1], nf_out],
@@ -226,9 +226,9 @@ def conv3d(imgs,
         conv = tf.nn.bias_add(conv, biases)
 
         if summary:
-            tf.summary.histogram("Bias_sum", biases, collections=["metrics"])
+            tf.compat.v1.summary.histogram("Bias_sum", biases, collections=["metrics"])
             # we put it in metrics so we don't store it too often
-            tf.summary.histogram("Weights_sum", w, collections=["metrics"])
+            tf.compat.v1.summary.histogram("Weights_sum", w, collections=["metrics"])
 
         return conv
 
@@ -240,12 +240,12 @@ def deconv2d(imgs,
              name="deconv2d",
              summary=True):
 
-    weights_initializer = tf.contrib.layers.xavier_initializer()
+    weights_initializer = tf.compat.v1.keras.initializers.VarianceScaling(scale=1.0, mode="fan_avg", distribution="uniform")
     # was
     # weights_initializer = tf.random_normal_initializer(stddev=stddev)
-    const = tf.constant_initializer(0.0)
+    const = tf.compat.v1.constant_initializer(0.0)
 
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
         # filter : [height, width, output_channels, in_channels]
         w = _tf_variable(
             'w', [shape[0], shape[1], output_shape[-1],
@@ -269,9 +269,9 @@ def deconv2d(imgs,
             deconv = tf.reshape(deconv, output_shape)
 
         if summary:
-            tf.summary.histogram("Bias_sum", biases, collections=["metrics"])
+            tf.compat.v1.summary.histogram("Bias_sum", biases, collections=["metrics"])
             # we put it in metrics so we don't store it too often
-            tf.summary.histogram("Weights_sum", w, collections=["metrics"])
+            tf.compat.v1.summary.histogram("Weights_sum", w, collections=["metrics"])
         return deconv
 
 
@@ -282,12 +282,12 @@ def deconv3d(imgs,
              name="deconv3d",
              summary=True):
 
-    weights_initializer = tf.contrib.layers.xavier_initializer()
+    weights_initializer = tf.compat.v1.keras.initializers.VarianceScaling(scale=1.0, mode="fan_avg", distribution="uniform")
     # was
     # weights_initializer = tf.random_normal_initializer(stddev=stddev)
-    const = tf.constant_initializer(0.0)
+    const = tf.compat.v1.constant_initializer(0.0)
 
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
         # filter : [depth, height, width, output_channels, in_channels]
         w = _tf_variable(
             'w', [
@@ -308,27 +308,27 @@ def deconv3d(imgs,
         deconv = tf.nn.bias_add(deconv, biases)
 
         if summary:
-            tf.summary.histogram("Bias_sum", biases, collections=["metrics"])
+            tf.compat.v1.summary.histogram("Bias_sum", biases, collections=["metrics"])
             # we put it in metrics so we don't store it too often
-            tf.summary.histogram("Weights_sum", w, collections=["metrics"])
+            tf.compat.v1.summary.histogram("Weights_sum", w, collections=["metrics"])
         return deconv
 
 
 def linear(input_, output_size, scope=None, summary=True):
     shape = input_.get_shape().as_list()
 
-    weights_initializer = tf.contrib.layers.xavier_initializer()
-    const = tf.constant_initializer(0.0)
+    weights_initializer = tf.compat.v1.keras.initializers.VarianceScaling(scale=1.0, mode="fan_avg", distribution="uniform")
+    const = tf.compat.v1.constant_initializer(0.0)
 
-    with tf.variable_scope(scope or "Linear"):
+    with tf.compat.v1.variable_scope(scope or "Linear"):
         matrix = _tf_variable(
             "Matrix", [shape[1], output_size],
             initializer=weights_initializer)
         bias = _tf_variable("bias", [output_size], initializer=const)
         if summary:
-            tf.summary.histogram(
+            tf.compat.v1.summary.histogram(
                 "Matrix_sum", matrix, collections=["metrics"])
-            tf.summary.histogram("Bias_sum", bias, collections=["metrics"])
+            tf.compat.v1.summary.histogram("Bias_sum", bias, collections=["metrics"])
         return tf.matmul(input_, matrix) + bias
 
 
@@ -360,7 +360,7 @@ def tf_cdf(x, n_out, use_first_channel=True):
     #     tf.reshape(wi, shape=[1, 1, n_out]),
     #     name='cdf_weight_right',
     #     dtype=tf.float32)
-    weights_initializer = tf.contrib.layers.xavier_initializer()
+    weights_initializer = tf.compat.v1.keras.initializers.VarianceScaling(scale=1.0, mode="fan_avg", distribution="uniform")
     wr = _tf_variable(
         'cdf_weight_right',
         shape=[1, 1, n_out],
@@ -380,8 +380,8 @@ def tf_cdf(x, n_out, use_first_channel=True):
     x = tf.expand_dims(reshape2d(x), axis=2)
     xl = tf.reduce_mean(tf.sigmoid(10 * (wl - x)), axis=1)
     xr = tf.reduce_mean(tf.sigmoid(10 * (x - wr)), axis=1)
-    tf.summary.histogram("cdf_weight_right", wr, collections=["metrics"])
-    tf.summary.histogram("cdf_weight_left", wl, collections=["metrics"])
+    tf.compat.v1.summary.histogram("cdf_weight_right", wr, collections=["metrics"])
+    tf.compat.v1.summary.histogram("cdf_weight_left", wl, collections=["metrics"])
 
     return tf.concat([xl, xr], axis=1)
 
@@ -395,7 +395,7 @@ def tf_covmat(x, shape):
     # w = _tf_variable('covmat_var', sh, wi)
     w = tf.constant(np.eye(nel).reshape(sh), dtype=tf.float32)
 
-    conv = tf.nn.conv2d(x, w, strides=[1, 1, 1, 1], padding='VALID')
+    conv = tf.nn.conv2d(x, filters=w, strides=[1, 1, 1, 1], padding='VALID')
     nx = conv.shape[1]*conv.shape[2]
     conv_vec = tf.reshape(conv,shape=[bs, nx ,nel])
     m = tf.reduce_mean(conv_vec, axis=[1,2])

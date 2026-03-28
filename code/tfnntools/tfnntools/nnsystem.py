@@ -38,7 +38,7 @@ class NNSystem(object):
         if self._debug_mode:
             print('\nParameters used for the NNSystem..')
             print(yaml.dump(self._params))
-        tf.reset_default_graph()
+        tf.compat.v1.reset_default_graph()
         if name:
             self._net = model(self.params['net'], name=name)
         else:
@@ -46,17 +46,17 @@ class NNSystem(object):
         self._params['net'] = deepcopy(self.net.params)
         self._name = self._net.name
         self._add_optimizer()
-        self._saver = tf.train.Saver(tf.global_variables(), max_to_keep=100)
+        self._saver = tf.compat.v1.train.Saver(tf.compat.v1.global_variables(), max_to_keep=100)
         utils.show_all_variables()
-        self._summaries = tf.summary.merge(tf.get_collection("train"))
+        self._summaries = tf.compat.v1.summary.merge(tf.compat.v1.get_collection("train"))
 
     def _add_optimizer(self):
-        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        update_ops = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)
         with tf.control_dependencies(update_ops):
             learning_rate = self._params['optimization']['learning_rate']
-            optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+            optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=learning_rate)
             self._optimize = optimizer.minimize(self._net.loss)
-        tf.summary.scalar("training/loss", self._net.loss, collections=["train"])
+        tf.compat.v1.summary.scalar("training/loss", self._net.loss, collections=["train"])
 
     def _get_dict(self, index=None, **kwargs):
         """Return a dictionary with the argument for the architecture."""
@@ -88,18 +88,18 @@ class NNSystem(object):
 
         # Create the save diretory if it does not exist
         os.makedirs(self._params['save_dir'], exist_ok=True)
-        run_config = tf.ConfigProto()
+        run_config = tf.compat.v1.ConfigProto()
 
-        with tf.Session(config=run_config) as self._sess:
+        with tf.compat.v1.Session(config=run_config) as self._sess:
             if resume:
                 print('Load weights in the network')
                 self.load()
             else:
-                self._sess.run(tf.global_variables_initializer())
+                self._sess.run(tf.compat.v1.global_variables_initializer())
                 utils.saferm(self.params['summary_dir'])
                 utils.saferm(self.params['save_dir'])
 
-            self._summary_writer = tf.summary.FileWriter(
+            self._summary_writer = tf.compat.v1.summary.FileWriter(
                 self._params['summary_dir'], self._sess.graph)
             try:
                 self._epoch = 0
@@ -233,20 +233,20 @@ class NNSystem(object):
     def outputs(self, checkpoint=None, **kwargs):
         outputs = self._net.outputs
 
-        with tf.Session() as self._sess:
+        with tf.compat.v1.Session() as self._sess:
 
             if self.load(checkpoint=checkpoint):
                 print("Model loaded.")
             else:
                 raise ValueError("Unable to load the model")
 
-            self._sess.run([tf.local_variables_initializer()])
+            self._sess.run([tf.compat.v1.local_variables_initializer()])
             feed_dict = self._get_dict(**kwargs)
 
             return self._sess.run(outputs, feed_dict=feed_dict)
 
     def loss(self, dataset, checkpoint=None):
-        with tf.Session() as self._sess:
+        with tf.compat.v1.Session() as self._sess:
 
             if self.load(checkpoint=checkpoint):
                 print("Model loaded.")
@@ -270,9 +270,9 @@ class NNSystem(object):
 class ValidationNNSystem(NNSystem):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._validation_loss = tf.placeholder(tf.float32, name='validation_loss')
-        tf.summary.scalar("validation/loss", self._validation_loss, collections=["validation"])
-        self._summaries_validation = tf.summary.merge(tf.get_collection("validation"))
+        self._validation_loss = tf.compat.v1.placeholder(tf.float32, name='validation_loss')
+        tf.compat.v1.summary.scalar("validation/loss", self._validation_loss, collections=["validation"])
+        self._summaries_validation = tf.compat.v1.summary.merge(tf.compat.v1.get_collection("validation"))
 
 
     def train(self, dataset_train, dataset_validation, resume=False):

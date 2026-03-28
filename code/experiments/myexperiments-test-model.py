@@ -21,10 +21,12 @@ from gantools import blocks
 #from audioinpainting.load_generator import Dataset_maestro
 from audioinpainting.load import load_audio_dataset
 
+tf.compat.v1.disable_eager_execution()
 
 # # Parameters
 downscale = 2
-models = ['extend', 'basic']
+# models = ['extend', 'basic']
+models = ['basic']
 types = ['solo', 'piano']
 
 for model in models:

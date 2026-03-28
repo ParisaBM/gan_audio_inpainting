@@ -39,7 +39,7 @@ class BaseNet(object):
         raise ValueError('This is an abstract class')
 
     def _add_summary(self):
-        tf.summary.scalar('train/loss', self._loss,  collections=["train"])
+        tf.compat.v1.summary.scalar('train/loss', self._loss,  collections=["train"])
 
     @property
     def name(self):

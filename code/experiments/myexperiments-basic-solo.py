@@ -23,6 +23,8 @@ from gantools import blocks
 from audioinpainting.load import load_audio_dataset
 from audioinpainting.model_basic import InpaintingGAN
 
+tf.compat.v1.disable_eager_execution()
+
 # # Parameters
 
 downscale = 2
@@ -65,8 +67,8 @@ print('Number of samples: {}'.format(dataset.N))
 # # Define parameters for the WGAN
 
 time_str = 'basic_solo'
-#global_path = '../saved_results'
-global_path = '/scratch/snx3000/aeltelt/saved_results_basic'
+global_path = '../saved_results'
+#global_path = '/scratch/snx3000/aeltelt/saved_results_basic'
 
 name = 'WGAN' + '_' + time_str
 
