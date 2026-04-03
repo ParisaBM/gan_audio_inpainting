@@ -27,7 +27,8 @@ tf.compat.v1.disable_eager_execution()
 downscale = 2
 # models = ['extend', 'basic']
 models = ['basic']
-types = ['solo', 'piano']
+# types = ['solo', 'piano']
+types = ['solo']
 
 for model in models:
     for type in types:
@@ -183,7 +184,7 @@ for model in models:
         
         
         def save_sound(x, fs, filename):
-            wavfile.write(filename, np.int(fs), (x * (2 ** 15)).astype(np.int16))
+            wavfile.write(filename, int(fs), (x * (2 ** 15)).astype(np.int16))
         
         
         # Save sound file

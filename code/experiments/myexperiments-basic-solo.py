@@ -33,7 +33,7 @@ downscale = 2
 # Load the data 
 start = time.time()
 # dataset = data.load.load_audio_dataset(scaling=downscale)
-dataset = load_audio_dataset(scaling=downscale, type='solo', spix=1024*16, augmentation=True)
+dataset = load_audio_dataset(scaling=downscale, type='solo', spix=1024 * 52, augmentation=True)
 
 print('Number of samples: {}'.format(dataset.N))
 
@@ -76,8 +76,8 @@ name = 'WGAN' + '_' + time_str
 # ## Parameters
 
 bn = False
-signal_length = 1024*16
-signal_split = [1024*6, 1024*4, 1024*6]
+signal_length = 1024 * 52
+signal_split = [1024 * 24, 1024 * 4, 1024 * 24]
 md = 64
 
 params_discriminator = dict()
