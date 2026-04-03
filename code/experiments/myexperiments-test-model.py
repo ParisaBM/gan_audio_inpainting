@@ -26,7 +26,7 @@ tf.compat.v1.disable_eager_execution()
 # # Parameters
 downscale = 2
 # models = ['extend', 'basic']
-models = ['basic']
+models = ['basic', 'noise']
 # types = ['solo', 'piano']
 types = ['solo']
 
@@ -58,6 +58,11 @@ for model in models:
             signal_split = [1024 * 18, 1024 * 6, 1024 * 4, 1024 * 6, 1024 * 18]
         elif model =='basic':
             from audioinpainting.model_basic import InpaintingGAN
+            spix = 1024*52
+            signal_length = 1024 * 52
+            signal_split = [1024 * 24, 1024 * 4, 1024 * 24]
+        elif model =='noise':
+            from audioinpainting.model_noise import InpaintingGAN
             spix = 1024*52
             signal_length = 1024 * 52
             signal_split = [1024 * 24, 1024 * 4, 1024 * 24]
@@ -168,7 +173,7 @@ for model in models:
             borders1 = np.stack([border1, border2], axis=2)
             borders2 = np.stack([border3, border4], axis=2)
             fake_signals = np.squeeze(wgan.generate(N=N_f, borders1=borders1, borders2=borders2)[1], axis=2)
-        elif model == 'basic':
+        elif model == 'basic' or model == 'noise':
             border1 = real_signals[:, :signal_split[0]]
             border2 = real_signals[:,-signal_split[2]:]
             borders = np.stack([border1, border2], axis=2)

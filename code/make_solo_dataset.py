@@ -57,8 +57,9 @@ if __name__ == '__main__':
             if file[-3:]=='wav':
                 paths.append(os.path.join(root, file))
 
+    noise_len = 4 * 1024
 
-    waveforms = np.array([], dtype=np.int16)
+    waveforms = np.empty((0, noise_len))
     for i, filepath in enumerate(paths):
         wavobj = read(paths[i])
         fs = wavobj.rate
@@ -68,8 +69,9 @@ if __name__ == '__main__':
         waveform = waveform[:, 0]
         waveform = downsample3(waveform)
         waveform = toint16(waveform)
-        if len(waveform) < 4*1024:
-            continue
-        waveforms = np.append(waveforms, waveform[:4*1024], axis=0)
-
-    np.savez('../data/noise', waveforms)
+        waveform = waveform[:len(waveform) // noise_len * noise_len]
+        waveform = np.reshape(waveform, (-1, noise_len))
+        waveforms = np.concatenate((waveforms, waveform))
+    
+    np.random.shuffle(waveforms)
+    np.savez('../data/noise', np.reshape(waveforms, (-1,)))
