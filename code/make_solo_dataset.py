@@ -47,4 +47,29 @@ if __name__ == '__main__':
         waveform = toint16(waveform)
         waveforms = np.append(waveforms, waveform, axis=0)
 
-    np.savez('../data/waveforms',waveforms)
+    np.savez('../data/waveforms', waveforms)
+
+    pathaudio = '../data/noise'
+
+    paths = []
+    for root, dirs, files in os.walk(pathaudio):
+        for file in files:
+            if file[-3:]=='wav':
+                paths.append(os.path.join(root, file))
+
+
+    waveforms = np.array([], dtype=np.int16)
+    for i, filepath in enumerate(paths):
+        wavobj = read(paths[i])
+        fs = wavobj.rate
+        assert(fs==44100)
+        waveform = wavobj.data.copy()
+        waveform = normalize(waveform)
+        waveform = waveform[:, 0]
+        waveform = downsample3(waveform)
+        waveform = toint16(waveform)
+        if len(waveform) < 4*1024:
+            continue
+        waveforms = np.append(waveforms, waveform[:4*1024], axis=0)
+
+    np.savez('../data/noise', waveforms)
