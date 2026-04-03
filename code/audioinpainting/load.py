@@ -15,6 +15,10 @@ def load_solo_rawdata():
     pathdata = os.path.join(data_root_path(), 'waveforms.npz')
     return np.load(pathdata)['arr_0']
 
+def load_noise_rawdata():
+    pathdata = os.path.join(data_root_path(), 'noise.npz')
+    return np.load(pathdata)['arr_0']
+
 def load_piano_rawdata():
     pathdata = os.path.join(data_root_path(), 'piano/piano-test.npz')
     return np.load(pathdata)['arr_0']
@@ -37,6 +41,9 @@ def load_audio_dataset(
         #sig = sig[:, :2**15]
     elif type == 'piano':
         sig = load_piano_rawdata()
+    elif type == 'solo+noise':
+        sig = load_solo_rawdata()
+        noise = load_noise_rawdata()
     else:
         raise ValueError('Incorrect value for type')
 
@@ -59,6 +66,8 @@ def load_audio_dataset(
     if scaling>1:
         # sig = blocks.downsample(sig, scaling)
         sig = transformation.downsample_1d(sig, scaling, Nwin=Nwin)
+        if type == 'solo+noise':
+            noise = transformation.downsample_1d(noise, scaling, Nwin=Nwin)
 
     if smooth is not None:
         sig = sig[:, :(sig.shape[1]//smooth)*smooth]
@@ -66,6 +75,16 @@ def load_audio_dataset(
         sig_smooth = transformation.upsamler_1d(sig_down, smooth, Nwin=Nwin)
 
         sig = np.concatenate((np.expand_dims(sig, axis=2), np.expand_dims(sig_smooth, axis=2)), axis=2)
+    
+    if type == 'solo+noise':
+        sig = transformation.slice_1d(sig, spix)
+        noise = transformation.slice_1d(noise, 4 * 1024)[:np.shape(sig)[0]]
+
+        sig = np.concatenate((sig, noise), axis=1)
+        sig = np.reshape(sig, (-1,))
+
+        spix += 4 * 1024
+
     if patch:
 
         slice_fn = partial(transformation.slice_1d_patch, spix=spix)

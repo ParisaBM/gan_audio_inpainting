@@ -33,7 +33,7 @@ downscale = 2
 # Load the data 
 start = time.time()
 # dataset = data.load.load_audio_dataset(scaling=downscale)
-dataset = load_audio_dataset(scaling=downscale, type='solo', spix=1024 * 52, augmentation=True)
+dataset = load_audio_dataset(scaling=downscale, type='solo', spix=1024 * 52, augmentation=False)
 
 print('Number of samples: {}'.format(dataset.N))
 
