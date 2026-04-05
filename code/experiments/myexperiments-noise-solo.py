@@ -117,6 +117,10 @@ params_generator['borders']['data_size'] = 1
 params_generator['borders']['width_full'] = 128
 params_generator['borders']['activation'] = tf.nn.relu
 
+params_generator['noisy_signal'] = dict()
+params_generator['noisy_signal']['nfilter'] = [md, 2*md, 4*md, 2*md]
+params_generator['noisy_signal']['shape'] = [[25], [25], [25], [25]]
+params_generator['noisy_signal']['stride'] = [4, 4, 4, 4]
 
 params_optimization = dict()
 params_optimization['batch_size'] = 64

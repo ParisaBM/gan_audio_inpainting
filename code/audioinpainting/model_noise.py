@@ -395,7 +395,9 @@ class InpaintingGAN(WGAN):
 
         self.borders = tf.compat.v1.placeholder_with_default(borders, shape=[None, *inshape], name='borders')
 
-        self.X_fake_center = self.generator(self.z,  y=self.borders, reuse=False)
+        noisy_signal = self.center_real+noise
+
+        self.X_fake_center = self.generator(self.z,  y=self.borders, noisy_signal=noisy_signal, reuse=False)
         # Those line should be done in a better way
         if self.data_size == 1:
             self.X_fake = tf.concat([self.borders[:,:,0:1], self.X_fake_center, self.borders[:,:,1:2], noise], axis=1)
@@ -404,8 +406,8 @@ class InpaintingGAN(WGAN):
         else:
             raise NotImplementedError()
 
-    def generator(self, z, y, **kwargs):
-        return generator_border(z, y=y, params=self.params['generator'], **kwargs)
+    def generator(self, z, y, noisy_signal, **kwargs):
+        return generator_border(z, y=y, noisy_signal=noisy_signal, params=self.params['generator'], **kwargs)
 
 # Conditional WGAN
 # input parameters are encoded as the length of the latent vector and
@@ -1400,20 +1402,23 @@ def one_pixel_mapping(x, n_filters, summary=True, reuse=False):
     rprint('  End of one Pixel Mapping '+''.join(['-']*20)+'\n', reuse)
     return x
 
-def generator_border(x, params, X=None, y=None, reuse=True, scope="generator"):
+def generator_border(x, params, X=None, y=None, noisy_signal=None, reuse=True, scope="generator"):
     params_border = params['borders']
     conv = get_conv(params_border['data_size'])
 
     assert(len(params_border['stride']) == len(params_border['nfilter'])
            == len(params_border['batch_norm']))
     nconv_border = len(params_border['stride'])
+
+    params_noisy_signal = params['noisy_signal']
+
     with tf.compat.v1.variable_scope(scope, reuse=reuse):
         rprint('Border block', reuse)
         rprint('\n'+(''.join(['-']*50)), reuse)
         rprint('     BORDER:  The input is of size {}'.format(y.shape), reuse)
-        imgt = y
+        bordert = y
         for i in range(nconv_border):
-            imgt = conv(imgt,
+            bordert = conv(bordert,
                        nf_out=params_border['nfilter'][i],
                        shape=params_border['shape'][i],
                        stride=params_border['stride'][i],
@@ -1421,13 +1426,31 @@ def generator_border(x, params, X=None, y=None, reuse=True, scope="generator"):
                        summary=params['summary'])
             rprint('     BORDER: {} Conv layer with {} channels'.format(i, params_border['nfilter'][i]), reuse)
             if params_border['batch_norm'][i]:
-                imgt = batch_norm(imgt, name='{}_border_bn'.format(i), train=True)
+                assert (False)
+                bordert = batch_norm(bordert, name='{}_border_bn'.format(i), train=True)
                 rprint('         Batch norm', reuse)
-            rprint('         BORDER:  Size of the conv variables: {}'.format(imgt.shape), reuse)
-            imgt = lrelu(imgt)
-        imgt = reshape2d(imgt, name='border_conv2vec')
+            rprint('         BORDER:  Size of the conv variables: {}'.format(bordert.shape), reuse)
+            bordert = lrelu(bordert)
+        bordert = reshape2d(bordert, name='border_conv2vec')
 	        
+        rprint('Noisy signal block', reuse)
+        rprint('\n'+(''.join(['-']*50)), reuse)
+        rprint('     NOISY SIGNAL:  The input is of size {}'.format(y.shape), reuse)
+        centret = noisy_signal
+        for i in range(len(params_noisy_signal['stride'])):
+            centret = conv(centret,
+                       nf_out=params_noisy_signal['nfilter'][i],
+                       shape=params_noisy_signal['shape'][i],
+                       stride=params_noisy_signal['stride'][i],
+                       name='{}_centre_conv'.format(i),
+                       summary=params['summary'])
+            rprint('     NOISY SIGNAL: {} Conv layer with {} channels'.format(i, params_noisy_signal['nfilter'][i]), reuse)
+            rprint('         NOISY SIGNAL:  Size of the conv variables: {}'.format(centret.shape), reuse)
+            centret = lrelu(centret)
+        centret = reshape2d(centret, name='border_conv2vec')
+
         wf = params_border['width_full']
+        assert (wf is not None) # this model hasn't been tested for the other case
         if wf is not None:
             st = y.shape.as_list()
             if params_border['data_size']==1:
@@ -1445,11 +1468,11 @@ def generator_border(x, params, X=None, y=None, reuse=True, scope="generator"):
                 raise ValueError('Incorrect data_size')
             rprint('     BORDER:  Size of the border variables: {}'.format(border.shape), reuse)
             # rprint('     Latent:  Size of the Z variables: {}'.format(x.shape), reuse)
-            y = tf.concat([imgt, border], axis=1)
+            y = tf.concat([bordert, border, centret], axis=1)
         else:
-            y = imgt
+            y = bordert
 
-        rprint('     BORDER:  Size of the conv variables: {}'.format(imgt.shape), reuse)
+        rprint('     BORDER:  Size of the conv variables: {}'.format(bordert.shape), reuse)
         rprint(''.join(['-']*50)+'\n', reuse)
 
         return generator(x, params, X=X, y=y, reuse=reuse, scope=scope)
