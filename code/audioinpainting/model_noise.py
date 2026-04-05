@@ -389,7 +389,7 @@ class InpaintingGAN(WGAN):
             shape=[None, self.params['generator']['latent_dim']],
             name='z')
 
-        borderleft, self.center_real, borderright = tf.split(self.X_real, self.params['inpainting']['split'], axis=1)
+        borderleft, self.center_real, borderright, noise = tf.split(self.X_real, self.params['inpainting']['split'], axis=1)
         borders = tf.concat([borderleft,borderright], axis=self.data_size+1)
         inshape = borders.shape.as_list()[1:]
 
@@ -398,9 +398,9 @@ class InpaintingGAN(WGAN):
         self.X_fake_center = self.generator(self.z,  y=self.borders, reuse=False)
         # Those line should be done in a better way
         if self.data_size == 1:
-            self.X_fake = tf.concat([self.borders[:,:,0:1], self.X_fake_center, self.borders[:,:,1:2]], axis=1)
+            self.X_fake = tf.concat([self.borders[:,:,0:1], self.X_fake_center, self.borders[:,:,1:2], noise], axis=1)
         elif self.data_size == 2:
-            self.X_fake = tf.concat([self.borders[:,:,:,0:1], self.X_fake_center, self.borders[:,:,:,1:2]], axis=1)
+            self.X_fake = tf.concat([self.borders[:,:,:,0:1], self.X_fake_center, self.borders[:,:,:,1:2], noise], axis=1)
         else:
             raise NotImplementedError()
 
@@ -970,6 +970,8 @@ def histogram_block(x, params, reuse):
 
 
 def discriminator(x, params, z=None, reuse=True, scope="discriminator", model=None):
+    x = x[:,:52*1024]
+
     conv = get_conv(params['data_size'])
 
     assert(len(params['stride']) ==

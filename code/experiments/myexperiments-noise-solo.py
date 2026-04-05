@@ -76,8 +76,8 @@ name = 'WGAN' + '_' + time_str
 # ## Parameters
 
 bn = False
-signal_length = 1024 * 52
-signal_split = [1024 * 24, 1024 * 4, 1024 * 24]
+signal_length = 1024 * 56
+signal_split = [1024 * 24, 1024 * 4, 1024 * 24, 1024 * 4]
 md = 64
 
 params_discriminator = dict()

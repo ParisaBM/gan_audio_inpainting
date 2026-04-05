@@ -69,7 +69,7 @@ for model in models:
         else:
             raise ValueError('Incorrect model; choose either "extend" or "basic"')
         
-        dataset = load_audio_dataset(scaling=downscale, type=type, spix=spix, augmentation=True)
+        dataset = load_audio_dataset(scaling=downscale, type=type if model=='noise' else 'solo+noise', spix=spix, augmentation=True)
         
         # Check whether number of generated samples is consistent with total number of samples
         if N_f > dataset.N:
