@@ -172,7 +172,7 @@ class WGAN(BaseGAN):
         return generator(z, params=self.params['generator'], **kwargs)
 
     def discriminator(self, X, **kwargs):
-        return discriminator(X, params=self.params['discriminator'], **kwargs) 
+        return discriminator(X, params=self.params['discriminator'], signal_split=self.params['inpainting']['split'], **kwargs) 
 
     def sample_latent(self, bs=1):
         latent_dim = self.params['generator']['latent_dim']
@@ -395,14 +395,14 @@ class InpaintingGAN(WGAN):
 
         self.borders = tf.compat.v1.placeholder_with_default(borders, shape=[None, *inshape], name='borders')
 
-        noisy_signal = self.center_real+noise
+        noisy_signal = self.center_real + 10 ** (-self.params['signal_to_noise'] / 10) * noise
 
         self.X_fake_center = self.generator(self.z,  y=self.borders, noisy_signal=noisy_signal, reuse=False)
         # Those line should be done in a better way
         if self.data_size == 1:
-            self.X_fake = tf.concat([self.borders[:,:,0:1], self.X_fake_center, self.borders[:,:,1:2], noise], axis=1)
+            self.X_fake = tf.concat([self.borders[:,:,0:1], self.X_fake_center, self.borders[:,:,1:2], noisy_signal], axis=1)
         elif self.data_size == 2:
-            self.X_fake = tf.concat([self.borders[:,:,:,0:1], self.X_fake_center, self.borders[:,:,:,1:2], noise], axis=1)
+            self.X_fake = tf.concat([self.borders[:,:,:,0:1], self.X_fake_center, self.borders[:,:,:,1:2], noisy_signal], axis=1)
         else:
             raise NotImplementedError()
 
@@ -971,8 +971,9 @@ def histogram_block(x, params, reuse):
     return hist
 
 
-def discriminator(x, params, z=None, reuse=True, scope="discriminator", model=None):
-    x = x[:,:52*1024]
+def discriminator(x, params, z=None, reuse=True, scope="discriminator", model=None, signal_split=None):
+    original = tf.concat([x[:,:signal_split[0]], x[:,-signal_split[3]:], x[:,signal_split[0]+signal_split[1]:-signal_split[3]]], axis=1)
+    x = tf.concat([x[:,:-signal_split[3]], original], axis=2)
 
     conv = get_conv(params['data_size'])
 

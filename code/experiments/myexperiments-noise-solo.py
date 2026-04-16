@@ -148,6 +148,7 @@ params['net']['inpainting']['split'] = signal_split
 params['net']['gamma_gp'] = 10 # Gradient penalty
 params['net']['fs'] = 14700//downscale
 params['net']['loss_type'] ='wasserstein'
+params['net']['signal_to_noise'] = -5
 
 params['optimization'] = params_optimization
 params['summary_every'] = 100 # Tensorboard summaries every ** iterations
