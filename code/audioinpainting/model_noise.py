@@ -377,7 +377,7 @@ class InpaintingGAN(WGAN):
         # Only works with 1D signal for now
         assert(params['generator']['data_size'] in [1,2])
         super().__init__(params=params, name=name)
-        self._inputs = (self.z, self.borders)
+        self._inputs = (self.z, self.borders, self.noisy_signal)
         self._outputs = (self.X_fake)
 
 	
@@ -396,13 +396,14 @@ class InpaintingGAN(WGAN):
         self.borders = tf.compat.v1.placeholder_with_default(borders, shape=[None, *inshape], name='borders')
 
         noisy_signal = self.center_real + 10 ** (-self.params['signal_to_noise'] / 10) * noise
+        self.noisy_signal = tf.compat.v1.placeholder_with_default(noisy_signal, shape=[None, *noisy_signal.shape.as_list()[1:]], name='noisy_signal')
 
-        self.X_fake_center = self.generator(self.z,  y=self.borders, noisy_signal=noisy_signal, reuse=False)
+        self.X_fake_center = self.generator(self.z,  y=self.borders, noisy_signal=self.noisy_signal, reuse=False)
         # Those line should be done in a better way
         if self.data_size == 1:
-            self.X_fake = tf.concat([self.borders[:,:,0:1], self.X_fake_center, self.borders[:,:,1:2], noisy_signal], axis=1)
+            self.X_fake = tf.concat([self.borders[:,:,0:1], self.X_fake_center, self.borders[:,:,1:2], self.noisy_signal], axis=1)
         elif self.data_size == 2:
-            self.X_fake = tf.concat([self.borders[:,:,:,0:1], self.X_fake_center, self.borders[:,:,:,1:2], noisy_signal], axis=1)
+            self.X_fake = tf.concat([self.borders[:,:,:,0:1], self.X_fake_center, self.borders[:,:,:,1:2], self.noisy_signal], axis=1)
         else:
             raise NotImplementedError()
 

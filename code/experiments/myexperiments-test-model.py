@@ -65,11 +65,11 @@ for model in models:
             from audioinpainting.model_noise import InpaintingGAN
             spix = 1024*52
             signal_length = 1024 * 52
-            signal_split = [1024 * 24, 1024 * 4, 1024 * 24]
+            signal_split = [1024 * 24, 1024 * 4, 1024 * 24, 1024 * 4]
         else:
             raise ValueError('Incorrect model; choose either "extend" or "basic"')
         
-        dataset = load_audio_dataset(scaling=downscale, type=type if model=='noise' else 'solo+noise', spix=spix, augmentation=True)
+        dataset = load_audio_dataset(scaling=downscale, type=type if model!='noise' else 'solo+noise', spix=spix, augmentation=False)
         
         # Check whether number of generated samples is consistent with total number of samples
         if N_f > dataset.N:
@@ -165,6 +165,7 @@ for model in models:
         # Generate new samples
         print('Generate new samples')
         real_signals = dataset.get_samples(N=N_f)
+        noisy_signals=None
         if model == 'extend':
             border1 = real_signals[:,signal_split[0]:(signal_split[0]+signal_split[1])]
             border2 = real_signals[:,-(signal_split[3]+signal_split[4]):-signal_split[4]]
@@ -173,11 +174,21 @@ for model in models:
             borders1 = np.stack([border1, border2], axis=2)
             borders2 = np.stack([border3, border4], axis=2)
             fake_signals = np.squeeze(wgan.generate(N=N_f, borders1=borders1, borders2=borders2)[1], axis=2)
-        elif model == 'basic' or model == 'noise':
+        elif model == 'basic':
             border1 = real_signals[:, :signal_split[0]]
             border2 = real_signals[:,-signal_split[2]:]
             borders = np.stack([border1, border2], axis=2)
             fake_signals = np.squeeze(wgan.generate(N=N_f, borders=borders))
+        elif model == 'noise':
+            border1 = real_signals[:, :signal_split[0]]
+            centre = real_signals[:, signal_split[0]:sum(signal_split[:2])]
+            border2 = real_signals[:, sum(signal_split[:2]):-signal_split[3]]
+            noise = real_signals[:, -signal_split[3]:]
+            borders = np.stack([border1, border2], axis=2)
+            noisy_signal = (centre + 10 ** (-params['net']['signal_to_noise'] / 10) * noise)
+            noisy_signals = np.concatenate([border1, noisy_signal, border2], axis=1)
+            fake_signals = np.squeeze(wgan.generate(N=N_f, borders=borders, noisy_signal=noisy_signal.reshape((-1, signal_split[1], 1))))[:, :-signal_split[3]]
+            real_signals = real_signals[:, :-signal_split[3]]
         
         # =============================================================================
         # import ltfatpy
@@ -202,6 +213,9 @@ for model in models:
             save_sound(real_signals[i,:], fs=fs, filename='{}/real_{}.wav'.format(path_wav, i))
             # Fake
             save_sound(fake_signals[i,:], fs=fs, filename='{}/fake_{}.wav'.format(path_wav, i))
+            # Noisy
+            if noisy_signals is not None:
+                save_sound(noisy_signals[i,:], fs=fs, filename='{}/noisy_{}.wav'.format(path_wav, i))
         
         
         # Display a few fake samples
